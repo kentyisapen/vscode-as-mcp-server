@@ -222,14 +222,17 @@ class EditorManager {
       // 置換を実行
       console.log('EditorManager: Reading file content');
       const doc = await vscode.workspace.openTextDocument(uri);
-      const content = doc.getText();
+      const content = doc.getText().replace(/\r\n/g, '\n');
       if (!content.includes(oldStr)) {
         return {
           content: [{ type: 'text', text: `Text to replace '${oldStr}' not found in the file` }],
           isError: true,
         };
       }
-      const newContent = content.replaceAll(oldStr, newStr);
+      const replaced = content.replaceAll(oldStr, newStr);
+
+      // DiffViewProvider に渡す前にも LF 統一
+      const newContent = replaced.replace(/\r\n/g, '\n');
       console.log('EditorManager: Text replacement - Old:', oldStr, 'New:', newStr);
 
       console.log('EditorManager: Content length - Original:', content.length, 'New:', newContent.length);

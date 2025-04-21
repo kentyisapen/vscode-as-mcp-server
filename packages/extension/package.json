@@ -53,6 +53,11 @@
           "type": "boolean",
           "default": false,
           "description": "If true, even commands marked as non-destructive (modifySomething=false) will require user confirmation."
+        },
+        "mcpServer.autoForwardPort": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically forward the MCP Server port when running in SSH remote environments."
         }
       }
     }

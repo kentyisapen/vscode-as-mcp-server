@@ -56,6 +56,37 @@ export const activate = async (context: vscode.ExtensionContext) => {
 
   // Server start function
   async function startServer(port: number) {
+    // Check if we're in a remote SSH environment
+    const isRemoteSSH = vscode.env.remoteName === 'ssh-remote';
+    
+    if (isRemoteSSH) {
+      outputChannel.appendLine(`DEBUG: Detected SSH remote environment: ${vscode.env.remoteName}`);
+      
+      // Automatically set up port forwarding if needed
+      try {
+        // VSCodeには、直接ポートを転送するAPIは公開されていないため、
+        // 代わりに自動転送を促す
+        const forwardPortCommand = 'remote-ssh.forwardPort';
+        outputChannel.appendLine(`DEBUG: Checking if command '${forwardPortCommand}' is available`);
+        
+        const commands = await vscode.commands.getCommands();
+        if (commands.includes(forwardPortCommand)) {
+          outputChannel.appendLine(`DEBUG: Attempting to forward port ${port}`);
+          await vscode.commands.executeCommand(forwardPortCommand, { port });
+          outputChannel.appendLine(`DEBUG: Port ${port} forwarding initiated`);
+        } else {
+          outputChannel.appendLine(`WARNING: Port forwarding command not available. VSCode may automatically forward the port.`);
+        }
+      } catch (error) {
+        outputChannel.appendLine(`WARNING: Failed to set up port forwarding: ${error}`);
+        // Continue anyway, as VSCode might still forward the port automatically
+      }
+      
+      // SSH環境ではVSCodeが自動的にポートを転送することが多いため、
+      // 明示的な転送設定が失敗しても続行する
+      outputChannel.appendLine(`NOTE: VSCode typically auto-forwards ports in SSH environments. Proceeding...`);
+    }
+    
     outputChannel.appendLine(`DEBUG: Starting MCP Server on port ${port}...`);
     transport = new BidiHttpTransport(port, outputChannel);
     // サーバー状態変更のイベントハンドラを設定
@@ -82,6 +113,29 @@ export const activate = async (context: vscode.ExtensionContext) => {
   // Start server if configured to do so
   const mcpConfig = vscode.workspace.getConfiguration('mcpServer');
   const port = mcpConfig.get<number>('port', 60100);
+  const autoForwardPort = mcpConfig.get<boolean>('autoForwardPort', true);
+  
+  // SSH環境では自動ポート転送を有効にする
+  if (vscode.env.remoteName === 'ssh-remote' && autoForwardPort) {
+    outputChannel.appendLine('SSH Remote environment detected. Setting up automatic port forwarding.');
+    try {
+      // VSCodeの自動ポート転送設定を確認
+      await vscode.commands.executeCommand('remote.autoForwardPorts', true);
+      outputChannel.appendLine('Automatic port forwarding enabled.');
+      
+      // ポートを明示的に転送リストに追加
+      const remoteConfig = vscode.workspace.getConfiguration('remote');
+      let portsToForward = remoteConfig.get<number[]>('portsAttributes', []);
+      if (!portsToForward.includes(port)) {
+        portsToForward.push(port);
+        await remoteConfig.update('portsAttributes', portsToForward, vscode.ConfigurationTarget.Global);
+        outputChannel.appendLine(`Added port ${port} to auto-forward list.`);
+      }
+    } catch (error) {
+      outputChannel.appendLine(`Failed to configure automatic port forwarding: ${error}`);
+    }
+  }
+  
   try {
     await startServer(port);
     outputChannel.appendLine(`MCP Server started on port ${port}.`);

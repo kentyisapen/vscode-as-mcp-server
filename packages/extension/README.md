@@ -1,4 +1,4 @@
-# VSCode as MCP Server
+# VSCode as MCP Server (Kenty)
 
 A VSCode extension that turns your VSCode into an MCP server, enabling advanced coding assistance from MCP clients like Claude Desktop.
 

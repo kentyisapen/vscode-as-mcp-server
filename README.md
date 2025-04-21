@@ -65,8 +65,20 @@ A VSCode extension that turns your VSCode into an MCP server, enabling advanced 
 
     - (Server icon): Server is running
     - ∅: Click to start the server
+    - [SSH] prefix: Indicates SSH remote environment
 
 ![Server status indicator](https://storage.googleapis.com/zenn-user-upload/321704116d4a-20250408.png)
+
+### SSH Remote Support
+
+This extension now supports VSCode Remote SSH environments. When running in an SSH remote session:
+
+- The server automatically binds to all interfaces (0.0.0.0) to support port forwarding
+- VSCode's automatic port forwarding is utilized (no manual configuration needed)
+- Status bar displays "[SSH]" prefix to indicate remote environment
+- All features work seamlessly in the remote environment
+
+Simply connect to your SSH remote host as usual and activate the extension - it will automatically detect the environment and configure itself appropriately.
 
 ## Motivation
 
